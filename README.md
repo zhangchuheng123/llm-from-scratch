@@ -1,1 +1,4 @@
 # llm-from-scratch
+
+## Setup
+
