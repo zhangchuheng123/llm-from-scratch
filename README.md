@@ -1,4 +1,14 @@
 # llm-from-scratch
 
-## Setup
+## Setup Environment
 
+```bash
+git clone git@github.com:zhangchuheng123/llm-from-scratch.git
+curl -O https://repo.anaconda.com/archive/Anaconda3-2024.06-1-Linux-x86_64.sh
+bash Anaconda3-2024.06-1-Linux-x86_64.sh
+conda create -n llm python=3.10
+conda activate llm
+conda install pytorch torchvision torchaudio cpuonly -c pytorch
+conda install matplotlib 
+pip install tiktoken tqdm tensorflow
+```
