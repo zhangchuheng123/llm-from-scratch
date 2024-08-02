@@ -244,7 +244,7 @@ def plot_values(epochs_seen, examples_seen, train_values, val_values, label="los
     ax2.set_xlabel("Examples seen")
 
     fig.tight_layout()  # Adjust layout to make room
-    plt.savefig(f"{label}-plot.pdf")
+    plt.savefig(f"finetune_{label}.pdf")
     # plt.show()
 
 
@@ -432,7 +432,7 @@ if __name__ == "__main__":
     # loss plot
     epochs_tensor = torch.linspace(0, num_epochs, len(train_losses))
     examples_seen_tensor = torch.linspace(0, examples_seen, len(train_losses))
-    plot_values(epochs_tensor, examples_seen_tensor, train_losses, val_losses)
+    plot_values(epochs_tensor, examples_seen_tensor, train_losses, val_losses, label="accuracy")
 
     # accuracy plot
     epochs_tensor = torch.linspace(0, num_epochs, len(train_accs))

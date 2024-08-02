@@ -9,6 +9,18 @@ bash Anaconda3-2024.06-1-Linux-x86_64.sh
 conda create -n llm python=3.10
 conda activate llm
 conda install pytorch torchvision torchaudio cpuonly -c pytorch
-conda install matplotlib 
+conda install matplotlib pandas
 pip install tiktoken tqdm tensorflow
+```
+
+## Pre-training 
+
+```bash
+python pretrain.py
+```
+
+## Fine-tuning 
+
+```bash
+python finetune.py
 ```

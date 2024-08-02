@@ -234,7 +234,7 @@ if __name__ == "__main__":
     # Plot results
     epochs_tensor = torch.linspace(0, OTHER_SETTINGS["num_epochs"], len(train_losses))
     plot_losses(epochs_tensor, tokens_seen, train_losses, val_losses)
-    plt.savefig("loss.pdf")
+    plt.savefig("pretrain_loss.pdf")
 
     # Save and load model
     torch.save(model.state_dict(), "model.pth")
