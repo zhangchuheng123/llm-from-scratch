@@ -15,6 +15,59 @@ from torch.utils.data import Dataset, DataLoader
 
 #####################################
 # Chapter 2
+# These two tokenizers are not used later
+# We later use tiktoken instead
+#####################################
+
+class SimpleTokenizerV1:
+    def __init__(self, vocab):
+        self.str_to_int = vocab
+        self.int_to_str = {i:s for s,i in vocab.items()}
+    
+    def encode(self, text):
+        # Split text by specified punctuations and white spaces
+        preprocessed = re.split(r'([,.?_!"()\']|--|\s)', text)
+        preprocessed = [
+            item.strip() for item in preprocessed if item.strip()
+        ]
+        # Convert to ids
+        ids = [self.str_to_int[s] for s in preprocessed]
+        return ids
+        
+    def decode(self, ids):
+        text = " ".join([self.int_to_str[i] for i in ids])
+        # Replace spaces before the specified punctuations
+        text = re.sub(r'\s+([,.?!"()\'])', r'\1', text)
+        return text
+
+
+class SimpleTokenizerV2:
+    def __init__(self, vocab):
+        self.str_to_int = vocab
+        self.int_to_str = { i:s for s,i in vocab.items()}
+    
+    def encode(self, text):
+        # Split text by specified punctuations and white spaces
+        preprocessed = re.split(r'([,.?_!"()\']|--|\s)', text)
+        preprocessed = [item.strip() for item in preprocessed if item.strip()]
+        # Replace not-in-vocab words with <|unk|>
+        preprocessed = [
+            item if item in self.str_to_int 
+            else "<|unk|>" for item in preprocessed
+        ]
+        # Convert to ids
+        ids = [self.str_to_int[s] for s in preprocessed]
+        return ids
+        
+    def decode(self, ids):
+        text = " ".join([self.int_to_str[i] for i in ids])
+        # Replace spaces before the specified punctuations
+        text = re.sub(r'\s+([,.?!"()\'])', r'\1', text)
+        return text
+
+
+#####################################
+# Chapter 2
 #####################################
 
 
@@ -57,7 +110,85 @@ def create_dataloader_v1(txt, batch_size=4, max_length=256,
 
 #####################################
 # Chapter 3
+# These two attention classes are not used later
+# We later use MultiHeadAttention instead
 #####################################
+
+class SelfAttention_v2(nn.Module):
+
+    def __init__(self, d_in, d_out, qkv_bias=False):
+        super().__init__()
+        self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_key   = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+
+    def forward(self, x):
+        # x: [L, d_in]
+        keys = self.W_key(x)
+        queries = self.W_query(x)
+        values = self.W_value(x)
+        # q, k, v: [L, d_out]
+
+        attn_scores = queries @ keys.T
+        attn_weights = \
+            torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
+        # attn_weights: [L, L]
+
+        context_vec = attn_weights @ values
+        # context_vec: [L, d_out]
+        return context_vec
+
+
+class CausalAttention(nn.Module):
+
+    def __init__(self, d_in, d_out, context_length,
+                 dropout, qkv_bias=False):
+        super().__init__()
+        self.d_out = d_out
+        self.W_query = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_key   = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.W_value = nn.Linear(d_in, d_out, bias=qkv_bias)
+        self.dropout = nn.Dropout(dropout) # New
+        self.register_buffer('mask', torch.triu(torch.ones(context_length, context_length), diagonal=1)) # New
+
+    def forward(self, x):
+        b, num_tokens, d_in = x.shape # New batch dimension b
+        keys = self.W_key(x)
+        queries = self.W_query(x)
+        values = self.W_value(x)
+
+        attn_scores = queries @ keys.transpose(1, 2) # Changed transpose
+        attn_scores.masked_fill_(  # New, _ ops are in-place
+            self.mask.bool()[:num_tokens, :num_tokens], -torch.inf)  
+        # `:num_tokens` to account for cases where the number of tokens in the batch is smaller than the supported context_size
+        attn_weights = torch.softmax(
+            attn_scores / keys.shape[-1]**0.5, dim=-1
+        )
+        attn_weights = self.dropout(attn_weights) # New
+
+        context_vec = attn_weights @ values
+        return context_vec
+
+
+class MultiHeadAttentionWrapper(nn.Module):
+
+    def __init__(self, d_in, d_out, 
+        context_length, dropout, num_heads, qkv_bias=False):
+
+        super().__init__()
+        self.heads = nn.ModuleList(
+            [CausalAttention(d_in, d_out, context_length, dropout, qkv_bias) 
+             for _ in range(num_heads)]
+        )
+
+    def forward(self, x):
+        return torch.cat([head(x) for head in self.heads], dim=-1)
+    
+
+#####################################
+# Chapter 3
+#####################################
+
 class MultiHeadAttention(nn.Module):
     def __init__(self, d_in, d_out, context_length, dropout, num_heads, qkv_bias=False):
         super().__init__()
@@ -91,9 +222,11 @@ class MultiHeadAttention(nn.Module):
         keys = keys.transpose(1, 2)
         queries = queries.transpose(1, 2)
         values = values.transpose(1, 2)
+        # q, k, v: [b, num_heads, num_tokens, head_dim]
 
         # Compute scaled dot-product attention (aka self-attention) with a causal mask
         attn_scores = queries @ keys.transpose(2, 3)  # Dot product for each head
+        # attn_scores: [b, num_heads, num_tokens, num_tokens]
 
         # Original mask truncated to the number of tokens and converted to boolean
         mask_bool = self.mask.bool()[:num_tokens, :num_tokens]
@@ -103,13 +236,15 @@ class MultiHeadAttention(nn.Module):
 
         attn_weights = torch.softmax(attn_scores / keys.shape[-1]**0.5, dim=-1)
         attn_weights = self.dropout(attn_weights)
+        # attn_weights: [b, num_heads, num_tokens, num_tokens]
 
-        # Shape: (b, num_tokens, num_heads, head_dim)
         context_vec = (attn_weights @ values).transpose(1, 2)
+        # context_vec: [b, num_tokens, num_heads, head_dim]
 
         # Combine heads, where self.d_out = self.num_heads * self.head_dim
         context_vec = context_vec.reshape(b, num_tokens, self.d_out)
         context_vec = self.out_proj(context_vec)  # optional projection
+        # context_vec: [b, num_tokens, d_out]
 
         return context_vec
 
