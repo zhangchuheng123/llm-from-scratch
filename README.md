@@ -13,6 +13,12 @@ conda install matplotlib pandas
 pip install tiktoken tqdm tensorflow
 ```
 
+## Setup Environment without conda
+
+```bash
+pip install pytorch matplotlib pandas tiktoken tqdm tensorflow
+```
+
 ## Pre-training 
 
 ```bash
