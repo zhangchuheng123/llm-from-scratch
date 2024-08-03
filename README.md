@@ -26,7 +26,7 @@ pip install tiktoken tqdm tensorflow
 ## Setup Environment without conda
 
 ```bash
-pip install pytorch matplotlib pandas tiktoken tqdm tensorflow
+pip install -i https://pypi.tuna.tsinghua.edu.cn/simple pytorch matplotlib pandas tiktoken tqdm tensorflow
 ```
 
 ## Pre-training 
