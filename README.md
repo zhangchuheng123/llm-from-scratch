@@ -13,6 +13,16 @@ conda install matplotlib pandas
 pip install tiktoken tqdm tensorflow
 ```
 
+## Setup Environment with conda installed
+
+```bash
+conda create -n llm python=3.10
+conda activate llm
+conda install pytorch torchvision torchaudio cpuonly -c pytorch
+conda install matplotlib pandas
+pip install tiktoken tqdm tensorflow
+```
+
 ## Setup Environment without conda
 
 ```bash
