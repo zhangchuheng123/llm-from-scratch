@@ -40,3 +40,9 @@ python pretrain.py
 ```bash
 python finetune.py
 ```
+
+## Disclaimer
+
+The code is adopted from the original code repo https://github.com/rasbt/LLMs-from-scratch of the book "Build a Large Language Model (From Scratch)".
+
+This directory follows the Apache 2.0 lisence according to the license of the original repo.
